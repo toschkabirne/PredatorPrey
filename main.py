@@ -99,7 +99,7 @@ def main():
         pygame.display.flip()
         end_time = time.time()  # Zeit am Ende der Iteration messen
         iteration_time = end_time - start_time  # Dauer berechnen
-        print(f"Dauer der Iteration: {iteration_time:.6f} Sekunden and {len(preys)} and pred: {len(predators)}")
+        # (f"Dauer der Iteration: {iteration_time:.6f} Sekunden and {len(preys)} and pred: {len(predators)}")
         clock.tick(FRAMES_PER_SECOND)
 
     pygame.quit()

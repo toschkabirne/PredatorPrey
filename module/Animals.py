@@ -17,6 +17,13 @@ def distance(a, b):
     """Berechne die Entfernung zwischen zwei Punkten."""
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
 
+def normalize_angle(angle):
+    """Normalisiert den Winkel auf den Bereich [-pi, pi]."""
+    return (angle + math.pi) % (2 * math.pi) - math.pi
+
+PREDATOR_RADIUS = 10
+PREY_RADIUS = 7
+
 class Predator:
     def __init__(self, x, y):
         self.x = x
@@ -29,24 +36,42 @@ class Predator:
     def get_inputs(self, preys):
         inputs = [0] * NUMBER_SIGHTS_PREDATOR
         start_angle = self.angle - math.radians(30)
-        indexListe = list(range(NUMBER_SIGHTS_PREDATOR))
+        # Calculate ray angles once
+        ray_angles = [normalize_angle(start_angle + i * math.radians(6)) for i in range(NUMBER_SIGHTS_PREDATOR)]
+        
         for prey in preys:
-            if distance((self.x, self.y), (prey.x, prey.y)) < SIGHT_RANGE_PREDATOR: #überprüfe jeden prey, wenn nah, überprüfe 
-                for i in indexListe: #indexListe #...überprüfe jede sichtlinie, und gebe als input rein.
-                    sight_angle = start_angle + i * math.radians(6)
-                    if abs(math.atan2(prey.y - self.y, prey.x - self.x) - sight_angle) < math.radians(3):
+            dist = distance((self.x, self.y), (prey.x, prey.y))
+            if dist < SIGHT_RANGE_PREDATOR and dist > 0:
+                # Calculate angle to prey and angular width
+                angle_to_prey = math.atan2(prey.y - self.y, prey.x - self.x)
+                # Use asin for exact tangent angle, clamp val to 1.0 to avoid domain error if inside
+                val = PREY_RADIUS / dist
+                if val > 1.0: val = 1.0
+                angular_width = math.asin(val)
+                
+                for i in range(NUMBER_SIGHTS_PREDATOR):
+                    if inputs[i] == 1: continue # Already active
+                    
+                    diff = abs(normalize_angle(ray_angles[i] - angle_to_prey))
+                    if diff < angular_width:
                         inputs[i] = 1
-                        indexListe.remove(i)
         return inputs
 
     def move(self, inputs): #scales good
         self.energy -= PRED_DEFAULT_DECAY
         outputs = self.brain.forward_vectorized(inputs, self.energy/PRED_ENERGY)
+        
+        # Movement threshold (optional for predator, but good for consistency)
+        speed_factor = outputs[0]
+        # if speed_factor < 0.05: speed_factor = 0 # Optional: Allow predator to stop completely
+        
         self.angle += outputs[1] * math.pi
-        self.x += outputs[0] * PREDATOR_SPEED * math.cos(self.angle)
-        self.y += outputs[0] * PREDATOR_SPEED * math.sin(self.angle)
+        self.x += speed_factor * PREDATOR_SPEED * math.cos(self.angle)
+        self.y += speed_factor * PREDATOR_SPEED * math.sin(self.angle)
         self.x, self.y = wrap_position((self.x, self.y), SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.energy -= outputs[0] * PRED_MOVING_DECAY
+        
+        # Quadratic energy decay for movement
+        self.energy -= (speed_factor ** 2) * PRED_MOVING_DECAY
 
     def hunt(self, preys):
         for prey in preys:
@@ -90,45 +115,59 @@ class Prey:
 
     def get_inputs(self, spatialpredators, predators):
         inputs = [0] * NUMBER_SIGHTS_PREY
-        indexListe = list(range(NUMBER_SIGHTS_PREY))
+        
+        # Pre-calculate ray angles
+        ray_angles = [normalize_angle(self.angle + i * math.radians(360/NUMBER_SIGHTS_PREY)) for i in range(NUMBER_SIGHTS_PREY)]
+        
         for predator in spatialpredators:
-            if distance((self.x, self.y), (predator.x, predator.y)) < 10:
+            dist = distance((self.x, self.y), (predator.x, predator.y))
+            
+            # Eating logic (kept from original)
+            if dist < 10:
                 predator.energy = min(PRED_ENERGY, predator.energy + PREDATOR_ENERGY_GAIN)
                 predator.eatenPrey +=1
                 new_predator = predator.reproduce()
                 if new_predator:
                    predators.append(new_predator)
-                return None
-            if distance((self.x, self.y), (predator.x, predator.y)) < SIGHT_RANGE_PREY:
-                poss_remov = []
-                for i in indexListe:
-                    sight_angle = self.angle + i * math.radians(360/NUMBER_SIGHTS_PREY)
-                    if abs(math.atan2(predator.y - self.y, predator.x - self.x) - sight_angle) < math.radians(360/(2*NUMBER_SIGHTS_PREY)):
+                return None # Eaten
+            
+            if dist < SIGHT_RANGE_PREY and dist > 0:
+                angle_to_pred = math.atan2(predator.y - self.y, predator.x - self.x)
+                val = PREDATOR_RADIUS / dist
+                if val > 1.0: val = 1.0
+                angular_width = math.asin(val)
+                
+                for i in range(NUMBER_SIGHTS_PREY):
+                    if inputs[i] == 1: continue
+                    
+                    diff = abs(normalize_angle(ray_angles[i] - angle_to_pred))
+                    if diff < angular_width:
                         inputs[i] = 1
-                        poss_remov.append(i)
-                for i in poss_remov:
-                    indexListe.remove(i)
-                if indexListe: 
-                    continue
-                else:
-                    break
                         
         return inputs
         
 
     def move(self, inputs):
         outputs = self.brain.forward_vectorized(inputs, self.energy/PREY_ENERGY)
-        if outputs[0] == 0: #if ouputs[0] <= 0.001
+        
+        speed_factor = outputs[0]
+        
+        # Movement threshold: Allow resting
+        if speed_factor < 0.05: 
             self.energy = min(PREY_ENERGY , self.energy+PREY_REST_ENERGY_GAIN)
             #self.rest_time += 1
             return
+            
         if self.energy < 0:
             return
+            
         self.angle += outputs[1] * math.pi
-        self.x += outputs[0] * PREY_SPEED * math.cos(self.angle)
-        self.y += outputs[0] * PREY_SPEED * math.sin(self.angle)
+        self.x += speed_factor * PREY_SPEED * math.cos(self.angle)
+        self.y += speed_factor * PREY_SPEED * math.sin(self.angle)
         self.x, self.y = wrap_position((self.x, self.y), SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.energy -= outputs[0] * PREY_MOVING_DECAY
+        
+        # Quadratic energy decay
+        self.energy -= (speed_factor ** 2) * PREY_MOVING_DECAY
 
     #def rest(self):   
 
