@@ -115,15 +115,15 @@ class Prey:
 
     def get_inputs(self, spatialpredators, predators):
         inputs = [0] * NUMBER_SIGHTS_PREY
-        
-        # Pre-calculate ray angles
-        ray_angles = [normalize_angle(self.angle + i * math.radians(360/NUMBER_SIGHTS_PREY)) for i in range(NUMBER_SIGHTS_PREY)]
+        sector_size = math.radians(360/NUMBER_SIGHTS_PREY)
         
         for predator in spatialpredators:
-            dist = distance((self.x, self.y), (predator.x, predator.y))
+            dx = predator.x - self.x
+            dy = predator.y - self.y
+            dist_sq = dx*dx + dy*dy
             
             # Eating logic (kept from original)
-            if dist < 10:
+            if dist_sq < 100: # 10^2
                 predator.energy = min(PRED_ENERGY, predator.energy + PREDATOR_ENERGY_GAIN)
                 predator.eatenPrey +=1
                 new_predator = predator.reproduce()
@@ -131,18 +131,29 @@ class Prey:
                    predators.append(new_predator)
                 return None # Eaten
             
-            if dist < SIGHT_RANGE_PREY and dist > 0:
-                angle_to_pred = math.atan2(predator.y - self.y, predator.x - self.x)
-                val = PREDATOR_RADIUS / dist
-                if val > 1.0: val = 1.0
-                angular_width = math.asin(val)
+            if dist_sq < SIGHT_RANGE_PREY**2:
+                angle_to_pred = math.atan2(dy, dx)
+                rel_angle = (angle_to_pred - self.angle)
+                rel_angle = (rel_angle + math.pi) % (2 * math.pi) - math.pi
                 
-                for i in range(NUMBER_SIGHTS_PREY):
-                    if inputs[i] == 1: continue
-                    
-                    diff = abs(normalize_angle(ray_angles[i] - angle_to_pred))
-                    if diff < angular_width:
-                        inputs[i] = 1
+                # Prey sights cover full 360 degrees.
+                # Bin index:
+                # The original code: sight_angle = self.angle + i * sector_size
+                # condition: abs(angle_to_pred - sight_angle) < sector_size/2
+                # This is exactly standard binning.
+                
+                # We need to handle the wrap around for the index.
+                # rel_angle is in [-pi, pi].
+                # We want indices 0..NUMBER_SIGHTS_PREY-1.
+                # index 0 is at rel_angle = 0.
+                # index 1 is at rel_angle = sector_size.
+                
+                idx = int(round(rel_angle / sector_size))
+                
+                # Handle wrap around
+                idx = idx % NUMBER_SIGHTS_PREY
+                
+                inputs[idx] = 1
                         
         return inputs
         

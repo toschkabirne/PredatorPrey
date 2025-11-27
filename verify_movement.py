@@ -31,7 +31,7 @@ def test_inputs():
 def test_movement_physics():
     print("\nTesting Movement Physics...")
     prey = Prey(0, 0)
-    prey.energy = 50
+    prey.energy = 40 # Start with less than max to allow gain
     initial_energy = prey.energy
     
     # Test 1: Resting (Low output)
