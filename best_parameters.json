@@ -1,7 +1,0 @@
-{
-  "ADD_NEURON": 0.1,
-  "ADD_WEIGHT": 0.5,
-  "CHANGE_WEIGHT": 0.9,
-  "PRED_INIT_MUT": 40,
-  "PREY_INIT_MUT": 12
-}
