@@ -1,0 +1,17 @@
+Problems:
+- Neurons spwaning in the air 
+    -> complete nonsense.
+    # it leads to an overflow of death neurons. 
+    # New edges spwane to death neurons leads to rarly triggering the output. 
+
+- The sightfield vecotors dont really work. 
+    -> only single neuron at a time is triggered. 
+    # i should search for a different approach. 
+        - either same, but improve that several neurons are triggered. 
+        - or new approach: Maybe with some Angular calculation. 
+
+- For the output angle i have to check, wheater also minus values are possible. 
+    -> I wnat to be able to turn left and right. 
+
+The simulation itself works. 
+         

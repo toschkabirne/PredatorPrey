@@ -1,0 +1,12 @@
+1. Data Structures
+-> Find out if there are suitable Datastructures for more efficient Data access, runtime improvement
+
+2. Matrix Multiplication
+-> Improved Computations trough Sparse, LU etc might be achievable (or not)
+
+3. Else, see @interactive_sim_obersvations.txt or @README.md 
+
+4. The @profile_sim.py is a good start to find out where most time is spend, but 
+    needs more improvement. (Just a quickly AI-generated script)
+
+5. just get familiar and do what you like

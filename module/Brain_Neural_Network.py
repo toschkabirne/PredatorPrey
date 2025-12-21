@@ -89,6 +89,10 @@ class NeuralNetwork:
         for order in self.reihnfolge:
             activations[order] = actFunc(activations[order] + (self.Hidden_Matrix[order] @ activations))
             
+        # Store for visualization
+        self.last_inputs = inputs
+        self.last_activations = activations.copy() # activations contains hidden + output neurons
+
         # Rückgabe der Ausgabeneuronen
         return [actSpeed(activations[0] + self.Hidden_Matrix[0] @ activations), actAngle(activations[1] + self.Hidden_Matrix[1] @ activations)]
         

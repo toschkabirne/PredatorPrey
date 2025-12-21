@@ -7,8 +7,9 @@ import os
 import time
 
 # Configuration
-PYTHON_EXECUTABLE = "/Users/toschka/Python/venv/bin/python"
-HEADLESS_RUNNER = "headless_runner.py"
+#PYTHON_EXECUTABLE = "/Users/toschka/Python/venv/bin/python"
+PYTHON_EXECUTABLE = "/Path/to/environment/venv/bin/python"
+HEADLESS_RUNNER = "module/headless_runner.py"
 OUTPUT_FILE = "search_results.json"
 BEST_PARAMS_FILE = "best_parameters.json"
 

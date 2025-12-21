@@ -1,1 +1,10 @@
 __pycache__/
+
+search_results.json
+best_parameters.json
+profile_results.txt
+Trash/
+verify_movement.py
+
+venv/
+env/
